@@ -1,0 +1,5 @@
+{
+  "name": "Quadric Surface Analyzer",
+  "description": "A 3D visualization and mathematical analysis tool for quadratic surfaces. Calculates canonical forms via SO(3) rotation and translation.",
+  "requestFramePermissions": []
+}
