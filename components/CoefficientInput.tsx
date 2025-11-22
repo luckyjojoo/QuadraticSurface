@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coefficients, Theme } from '../types';
+import { Coefficients, Theme } from '../types.ts';
 
 interface Props {
   coeffs: Coefficients;
@@ -93,12 +93,12 @@ const CoefficientInput: React.FC<Props> = ({ coeffs, onChange, theme }) => {
     const terms: string[] = [];
     const { a11, a22, a33, a12, a23, a13, b1, b2, b3, c } = coeffs;
 
-    const addTerm = (val: number, suffix: string, multiplier: number = 1) => {
-        const effectiveVal = val * multiplier;
-        if (Math.abs(effectiveVal) < 1e-6) return;
+    // Multiplier defaults to 1 now for all terms as per request
+    const addTerm = (val: number, suffix: string) => {
+        if (Math.abs(val) < 1e-6) return;
         
-        const sign = effectiveVal < 0 ? " - " : (terms.length > 0 ? " + " : "");
-        const absVal = Math.abs(effectiveVal);
+        const sign = val < 0 ? " - " : (terms.length > 0 ? " + " : "");
+        const absVal = Math.abs(val);
         // Hide '1' if there is a suffix (e.g. 1x^2 -> x^2), but show 0.5x^2
         const valStr = (Math.abs(absVal - 1) < 1e-6 && suffix !== "") ? "" : parseFloat(absVal.toFixed(3)).toString();
         
@@ -108,13 +108,13 @@ const CoefficientInput: React.FC<Props> = ({ coeffs, onChange, theme }) => {
     addTerm(a11, "x²");
     addTerm(a22, "y²");
     addTerm(a33, "z²");
-    addTerm(a12, "xy", 2);
-    addTerm(a23, "yz", 2);
-    addTerm(a13, "xz", 2);
-    addTerm(b1, "x", 2);
-    addTerm(b2, "y", 2);
-    addTerm(b3, "z", 2);
-    addTerm(c, "", 1);
+    addTerm(a12, "xy");
+    addTerm(a23, "yz");
+    addTerm(a13, "xz");
+    addTerm(b1, "x");
+    addTerm(b2, "y");
+    addTerm(b3, "z");
+    addTerm(c, "");
 
     if (terms.length === 0) return "0 = 0";
     return terms.join("") + " = 0";
@@ -133,14 +133,11 @@ const CoefficientInput: React.FC<Props> = ({ coeffs, onChange, theme }) => {
          <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Reference Formula</p>
          <div className="text-sm sm:text-base font-serif text-slate-600 text-center leading-relaxed px-2">
             a<sub>11</sub>x² + a<sub>22</sub>y² + a<sub>33</sub>z² + 
-            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">2a<sub>12</sub></span>xy + 
-            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">2a<sub>23</sub></span>yz + 
-            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">2a<sub>13</sub></span>xz + 
-            2b<sub>1</sub>x + 2b<sub>2</sub>y + 2b<sub>3</sub>z + c = 0
+            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">a<sub>12</sub></span>xy + 
+            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">a<sub>23</sub></span>yz + 
+            <span className="font-bold text-slate-800 bg-slate-100 px-1 rounded mx-0.5">a<sub>13</sub></span>xz + 
+            b<sub>1</sub>x + b<sub>2</sub>y + b<sub>3</sub>z + c = 0
          </div>
-         <p className="text-[10px] text-slate-400 mt-2 text-center italic">
-            Note: Inputs for cross terms (a<sub>ij</sub>) and linear terms (b<sub>i</sub>) are multiplied by 2 in the equation.
-         </p>
       </div>
 
       {/* Live Equation Preview */}

@@ -1,4 +1,4 @@
-import { Theme, ThemeOption, Coefficients } from './types';
+import { Theme, ThemeOption, Coefficients } from './types.ts';
 
 export const INITIAL_COEFFICIENTS: Coefficients = {
   a11: 1,

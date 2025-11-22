@@ -1,4 +1,4 @@
-import { Coefficients, AnalysisResult } from '../types';
+import { Coefficients, AnalysisResult } from '../types.ts';
 
 // We declare math as any because it's loaded from CDN
 declare const math: any;
@@ -7,14 +7,21 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
   const { a11, a22, a33, a12, a23, a13, b1, b2, b3, c } = coeffs;
 
   // 1. Construct Matrix A and Vector B
-  // Based on equation: a11x^2 + ... + 2a12xy + ...
-  // The matrix entry Aij for term 2*Aij*xi*xj is just Aij.
+  // Equation: a11*x^2 + ... + a12*xy + ... + b1*x + ...
+  // Matrix form: X^T A X + J^T X + c = 0
+  
+  // Diagonal entries are a11, a22, a33
+  // Off-diagonal entries correspond to cross terms.
+  // In X^T A X, the term is (A_ij + A_ji) * xi * xj.
+  // We want (A_ij + A_ji) = a_ij. Since A is symmetric, A_ij = a_ij / 2.
   const A = [
-    [a11, a12, a13],
-    [a12, a22, a23],
-    [a13, a23, a33],
+    [a11, a12 / 2, a13 / 2],
+    [a12 / 2, a22, a23 / 2],
+    [a13 / 2, a23 / 2, a33],
   ];
-  const B = [b1, b2, b3];
+  
+  // Linear coefficients vector J
+  const J = [b1, b2, b3];
 
   // 2. Eigen Decomposition of A
   // Returns eigenvalues and eigenvectors
@@ -36,14 +43,12 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
   
   const rawVal = math.flatten(ans.values);
   // Ensure we extract Real part of eigenvalues in case of tiny numerical imaginary noise
-  // math.re() handles both numbers and Complex objects.
   let eigenvalues = getArray(rawVal).map((v: any) => math.re(v)) as number[];
   
   // ans.vectors is the matrix of eigenvectors (columns)
   let vectors = getArray(math.matrix(ans.vectors)); 
 
   // Sort eigenvalues in descending order to keep standard form nice
-  // We map them to eigenvectors (columns of vectors matrix)
   const eigPairs = eigenvalues.map((val, idx) => ({
     val,
     vec: [
@@ -66,19 +71,24 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
   // Ensure M is in SO(3) -> det(M) = 1
   let detM = math.det(M);
   if (detM < 0) {
-    // Flip the last eigenvector (corresponding to smallest eigenvalue usually) to preserve right-handed system
+    // Flip the last eigenvector to preserve right-handed system
     M[0][2] *= -1;
     M[1][2] *= -1;
     M[2][2] *= -1;
   }
 
   // 3. Calculate Translation Vector tau
-  // Let X = M(X' + S) where S is shift in new coords.
-  // Or X = M X' + tau => tau = M * S.
-  // B_tilde = M^T * B.
-  
+  // Coordinate transform: X = M(X' + S)  => X = M*X' + M*S => tau = M*S
+  // Substitute into eq: X^T A X + J^T X + c = 0
+  // Becomes: X'^T (M^T A M) X' + (2 S^T M^T A M + J^T M) X' + (S^T M^T A M S + J^T M S + c) = 0
+  // Let Lambda = M^T A M (diagonal eigenvalues)
+  // Let J' = M^T J (rotated linear coefficients)
+  // Linear term coefficient in X' is: 2 * Lambda * S + J'
+  // To remove linear term (complete square), we need 2 * lambda_i * s_i + j'_i = 0
+  // => s_i = - j'_i / (2 * lambda_i)
+
   const MT = math.transpose(M);
-  const B_tilde = math.multiply(MT, B) as number[]; // Vector in rotated frame
+  const J_prime = math.multiply(MT, J) as number[]; // Vector in rotated frame
   
   const S = [0, 0, 0];
   const epsilon = 1e-5;
@@ -88,20 +98,29 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
   // Complete the square for each coordinate
   for (let i = 0; i < 3; i++) {
     const lambda = eigenvalues[i];
-    const bi = B_tilde[i];
+    const ji = J_prime[i];
 
     if (Math.abs(lambda) > epsilon) {
       // Central case for this dimension
-      // Shift S_i = -bi/lambda. 
+      // Shift S_i = -ji / (2 * lambda)
+      const s_i = -ji / (2 * lambda);
+      S[i] = s_i;
       
-      S[i] = -bi / lambda;
-      c_prime -= (bi * bi) / lambda;
+      // The constant term changes by: lambda * s^2 + ji * s
+      // = lambda * (-j/2L)^2 + j * (-j/2L)
+      // = j^2 / 4L - j^2 / 2L = -j^2 / 4L
+      c_prime -= (ji * ji) / (4 * lambda);
     } else {
       // Zero eigenvalue.
-      if (Math.abs(bi) > epsilon) {
+      if (Math.abs(ji) > epsilon) {
         // Parabolic case.
-        // S[i] such that constant vanishes.
-        S[i] = -c_prime / (2 * bi);
+        // We cannot remove linear term.
+        // We use shift in this dimension to absorb the constant term c_prime.
+        // New term is ji * x'' + c_prime = ji(x'' + c_prime/ji)
+        // Shift S_i = c_prime / ji. Note: This moves origin to cancel C.
+        // However, standard form usually keeps 2p z. 
+        // Let's define S[i] to zero out C.
+        S[i] = -c_prime / ji;
         c_prime = 0;
         linearVars.push(i);
       } else {
@@ -111,7 +130,7 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
     }
   }
 
-  // Calculate final tau in original coordinates
+  // Calculate final tau in original coordinates: tau = M * S
   const tau = math.multiply(M, S) as number[];
 
   // 4. Determine Surface Type and Standard Form
@@ -131,8 +150,8 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
 
   // Linear parts (for parabolic)
   linearVars.forEach(idx => {
-    // The coefficient is 2 * B_tilde[idx]
-    const coef = 2 * B_tilde[idx];
+    // The coefficient is J_prime[idx]
+    const coef = J_prime[idx];
     const sign = coef < 0 ? "-" : (terms.length > 0 ? "+" : "");
     const val = Math.abs(coef);
     terms.push(`${sign} ${val.toFixed(2)}${vars[idx]}`);
@@ -147,22 +166,32 @@ export const analyzeSurface = (coeffs: Coefficients): AnalysisResult => {
   let standardForm = terms.join(" ").trim() + " = 0";
   if (terms.length === 0) standardForm = "0 = 0";
 
-  // Classification (Simplified)
+  // Classification (Simplified logic based on signs of eigenvalues and rank)
   let surfaceType = "General Quadric";
   const rank = eigenvalues.filter(v => Math.abs(v) > epsilon).length;
   const sigPos = eigenvalues.filter(v => v > epsilon).length;
   const sigNeg = eigenvalues.filter(v => v < -epsilon).length;
   
   if (linearVars.length > 0) {
-      if (rank === 2) surfaceType = "Paraboloid (Elliptic or Hyperbolic)";
+      // Parabolic forms
+      if (rank === 2) surfaceType = (sigPos === 2 || sigNeg === 2) ? "Elliptic Paraboloid" : "Hyperbolic Paraboloid";
       else if (rank === 1) surfaceType = "Parabolic Cylinder";
   } else {
+      // Central forms
       if (rank === 3) {
-          if (Math.abs(c_prime) < epsilon) surfaceType = "Cone or Point";
-          else if ((sigPos === 3 || sigNeg === 3) && c_prime * eigenvalues[0] < 0) surfaceType = "Ellipsoid";
-          else if ((sigPos === 2 || sigNeg === 2)) surfaceType = c_prime * (sigPos===2?1:-1) < 0 ? "Hyperboloid 1-Sheet" : "Hyperboloid 2-Sheets"; 
+          if (Math.abs(c_prime) < epsilon) surfaceType = "Cone (Real or Imaginary)";
+          else {
+             // Check signs relative to C
+             // Standard form: L1 x^2 + L2 y^2 + L3 z^2 = -C
+             const rhs = -c_prime;
+             const sameSign = eigenvalues.filter(l => l * rhs > 0).length;
+             if (sameSign === 3) surfaceType = "Ellipsoid";
+             else if (sameSign === 2) surfaceType = "Hyperboloid of One Sheet";
+             else if (sameSign === 1) surfaceType = "Hyperboloid of Two Sheets";
+             else surfaceType = "Imaginary Ellipsoid";
+          }
       } else if (rank === 2) {
-           if (Math.abs(c_prime) < epsilon) surfaceType = "Intersecting Planes";
+           if (Math.abs(c_prime) < epsilon) surfaceType = (sigPos===2 || sigNeg===2) ? "Intersecting Planes (Imaginary)" : "Intersecting Planes";
            else surfaceType = (sigPos === 2 || sigNeg === 2) ? "Elliptic Cylinder" : "Hyperbolic Cylinder";
       } else if (rank === 1) {
            surfaceType = Math.abs(c_prime) < epsilon ? "Coincident Planes" : "Parallel Planes";

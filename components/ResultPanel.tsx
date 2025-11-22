@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnalysisResult, Theme } from '../types';
+import { AnalysisResult, Theme } from '../types.ts';
 import { Calculator, Move, Rotate3d, Grid3X3, Sigma } from 'lucide-react';
 
 interface Props {

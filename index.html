@@ -9,6 +9,8 @@
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <!-- Math.js for Matrix Algebra -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <!-- Babel for client-side JSX/TSX compilation if no build step is used -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
       body {
@@ -42,6 +44,7 @@
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <!-- Changed to relative path ./index.tsx and added explicit Babel type for raw source execution -->
+    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
   </body>
 </html>

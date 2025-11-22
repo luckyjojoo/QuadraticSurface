@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Coefficients, ThemeOption, AnalysisResult } from './types';
-import { INITIAL_COEFFICIENTS, THEMES } from './constants';
-import { analyzeSurface } from './services/mathService';
-import CoefficientInput from './components/CoefficientInput';
-import SurfaceVisualizer from './components/SurfaceVisualizer';
-import ResultPanel from './components/ResultPanel';
+import { Coefficients, ThemeOption, AnalysisResult } from './types.ts';
+import { INITIAL_COEFFICIENTS, THEMES } from './constants.ts';
+import { analyzeSurface } from './services/mathService.ts';
+import CoefficientInput from './components/CoefficientInput.tsx';
+import SurfaceVisualizer from './components/SurfaceVisualizer.tsx';
+import ResultPanel from './components/ResultPanel.tsx';
 import { Box, Palette, Info } from 'lucide-react';
 
 function App() {

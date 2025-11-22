@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Coefficients, Theme } from '../types';
+import { Coefficients, Theme } from '../types.ts';
 
 // Declare Plotly from global window
 declare const Plotly: any;
@@ -20,16 +20,12 @@ const SurfaceVisualizer: React.FC<Props> = ({ coeffs, theme }) => {
 
     // Define grid
     const range = 10;
-    const step = 0.8; // Resolution
+    const step = 0.4; // Resolution
     const x: number[] = [];
     const y: number[] = [];
     const z: number[] = [];
     const values: number[] = [];
 
-    // We need flattened arrays for x, y, z, value for Plotly isosurface
-    // But standard grid is easier for some types. 
-    // For 'isosurface', we give 1D arrays of X, Y, Z coordinates and a 1D array of Values (flattened 3D grid)
-    
     const axis = [];
     for (let i = -range; i <= range; i += step) {
       axis.push(i);
@@ -47,18 +43,17 @@ const SurfaceVisualizer: React.FC<Props> = ({ coeffs, theme }) => {
                 y.push(yi);
                 z.push(zi);
 
-                // F(x,y,z) = X^T A X + 2B^T X + C
-                // = a11 x^2 + a22 y^2 + a33 z^2 + 2a12 xy + 2a23 yz + 2a13 xz + 2b1 x + 2b2 y + 2b3 z + c
+                // F(x,y,z) = a11 x^2 + ... + a12 xy + ... + b1 x + ... + c
                 const val = 
                     a11 * xi * xi + 
                     a22 * yi * yi + 
                     a33 * zi * zi + 
-                    2 * a12 * xi * yi + 
-                    2 * a23 * yi * zi + 
-                    2 * a13 * xi * zi + 
-                    2 * b1 * xi + 
-                    2 * b2 * yi + 
-                    2 * b3 * zi + 
+                    a12 * xi * yi + 
+                    a23 * yi * zi + 
+                    a13 * xi * zi + 
+                    b1 * xi + 
+                    b2 * yi + 
+                    b3 * zi + 
                     c;
                 
                 values.push(val);
@@ -109,8 +104,6 @@ const SurfaceVisualizer: React.FC<Props> = ({ coeffs, theme }) => {
         setIsGraphLoaded(true);
     });
 
-    // Cleanup on unmount not strictly necessary for Plotly simple use, 
-    // but good practice to purge if component is destroyed.
     return () => {
       if (plotDivRef.current) {
         Plotly.purge(plotDivRef.current);
