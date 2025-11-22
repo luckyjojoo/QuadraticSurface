@@ -4,17 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quadric Surface Analyzer</title>
+
+    <!-- Tailwind (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- Plotly.js for 3D Surface Plotting -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
     <!-- Math.js for Matrix Algebra -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
-    <!-- Babel for client-side JSX/TSX compilation if no build step is used -->
+
+    <!-- Babel for client-side JSX/TSX compilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Fonts & basic styling -->
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap");
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: "Inter", sans-serif;
       }
       /* Custom scrollbar for panels */
       ::-webkit-scrollbar {
@@ -31,20 +38,29 @@
         background: #555;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
-  }
-}
-</script>
-</head>
+
+    <!-- Import map for React, ReactDOM, lucide-react -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://aistudiocdn.com/react@^19.2.0",
+          "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+          "react/": "https://aistudiocdn.com/react@^19.2.0/",
+          "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+        }
+      }
+    </script>
+  </head>
+
   <body>
     <div id="root"></div>
-    <!-- Changed to relative path ./index.tsx and added explicit Babel type for raw source execution -->
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
+
+    <!-- IMPORTANT: relative path so it works under /QuadraticSurface/ -->
+    <script
+      type="text/babel"
+      data-presets="react,typescript"
+      data-type="module"
+      src="./index.tsx"
+    ></script>
   </body>
 </html>
