@@ -50,7 +50,8 @@ const NumberInput: React.FC<{
   return (
     <input
       type="text" 
-      inputMode="decimal"
+      inputMode="numeric"
+      pattern="-?[0-9]*[.,]?[0-9]*"
       value={localValue}
       onChange={handleChange}
       onBlur={handleBlur}
